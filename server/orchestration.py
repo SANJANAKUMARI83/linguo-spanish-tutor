@@ -11,17 +11,17 @@ from curriculum import LESSONS
 
 def detect_mode(user_text, lesson_state):
     """Detect user intent and update lesson state accordingly.
-    
+
     Analyzes user input to determine the appropriate tutoring mode:
     - quiz: User wants to be tested
     - teaching: User wants to learn new content
     - conversation: User wants practice dialogue
     - doubt: User has a question or clarification need
-    
+
     Args:
         user_text: The user's spoken/typed input
         lesson_state: Current LessonState instance to update
-        
+
     Returns:
         str: The detected/current mode
     """
@@ -36,11 +36,30 @@ def detect_mode(user_text, lesson_state):
         lesson_state.set_mode("teaching")
 
     # Conversation practice triggers
-    elif any(keyword in text for keyword in ["practice", "conversation", "talk", "chat"]):
+    elif any(
+        keyword in text
+        for keyword in [
+            "practice",
+            "conversation",
+            "talk",
+            "chat",
+            "roleplay",
+            "role play",
+        ]
+    ):
         lesson_state.set_mode("conversation")
 
     # Doubt/clarification triggers
-    elif any(keyword in text for keyword in ["why", "what does", "meaning", "explain", "how do you"]):
+    elif any(
+        keyword in text
+        for keyword in [
+            "why",
+            "what does",
+            "meaning",
+            "explain",
+            "how do you",
+        ]
+    ):
         lesson_state.enter_doubt_mode()
 
     return lesson_state.current_mode
@@ -48,23 +67,23 @@ def detect_mode(user_text, lesson_state):
 
 def get_mode_instruction(lesson_state):
     """Generate mode-specific instruction to inject into Gemini context.
-    
+
     Creates tailored guidance for the LLM based on current mode,
     ensuring behavior matches user expectations.
-    
+
     Args:
         lesson_state: Current LessonState instance
-        
+
     Returns:
         str: Context instruction to inject, or empty string if no lesson active
     """
     if not lesson_state.current_lesson:
         return ""
-    
+
     current_lesson = LESSONS.get(lesson_state.current_lesson)
     if not current_lesson:
         return ""
-    
+
     mode_templates = {
         "teaching": f"""
 MODE SWITCH: You are now in TEACHING mode.
@@ -84,7 +103,7 @@ TEACHING STRATEGY:
 
 Keep responses under 15 words. The learner should speak more than you.
 """,
-        
+
         "quiz": f"""
 MODE SWITCH: You are now in QUIZ mode.
 
@@ -101,7 +120,7 @@ QUIZ FLOW:
 
 Keep questions short. Accept semantically correct answers even if wording differs.
 """,
-        
+
         "conversation": f"""
 MODE SWITCH: You are now in CONVERSATION PRACTICE mode.
 
@@ -118,7 +137,7 @@ CONVERSATION STRATEGY:
 
 Respond in Spanish primarily. Keep responses under 10 words to encourage their participation.
 """,
-        
+
         "doubt": """
 MODE SWITCH: You are now in DOUBT RESOLUTION mode.
 
@@ -133,32 +152,60 @@ APPROACH:
 Keep explanations under 20 words. Then resume the previous activity.
 """,
     }
-    
+
     return mode_templates.get(lesson_state.current_mode, "")
 
 
 def detect_lesson_switch(user_text, lesson_state):
     """Detect if user wants to switch to a different lesson topic.
-    
+
     Args:
         user_text: The user's input
         lesson_state: Current LessonState instance
-        
+
     Returns:
         str: New lesson name if detected, None otherwise
     """
     text = user_text.lower()
-    
+
     # Map common phrases to lesson names
     lesson_triggers = {
         "greetings": ["greet", "hello", "hi", "goodbye"],
-        "numbers": ["number", "count", "uno", "dos", "tres"],
-        # Add more lessons as they're created in curriculum.py
+
+        "numbers": [
+            "number",
+            "count",
+            "uno",
+            "dos",
+            "tres",
+        ],
+
+        "ordering_food": [
+            "food",
+            "restaurant",
+            "coffee",
+            "menu",
+            "water",
+            "order food",
+        ],
     }
-    
+
     for lesson_name, keywords in lesson_triggers.items():
         if any(keyword in text for keyword in keywords):
             if lesson_state.current_lesson != lesson_name:
                 return lesson_name
-    
+
     return None
+
+
+def track_mistake(user_text, expected_answer, lesson_state):
+    user_text = user_text.lower()
+
+    expected_answer = expected_answer.lower()
+
+    if expected_answer not in user_text:
+        lesson_state.mistakes.append(expected_answer)
+
+        return True
+
+    return False

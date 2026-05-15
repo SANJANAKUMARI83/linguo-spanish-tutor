@@ -51,11 +51,39 @@ LESSONS = {
         ],
         "examples": [
             "Tengo dos perros",
-            "Quiero tres tacos"
+            "Quiero tres tacos",
+            "Cinco amigos"
         ],
         "practice_questions": [
             "How do you say three in Spanish?",
-            "What is cinco in English?"
+            "What does cinco mean?",
+            "How do you say two in Spanish?"
+        ]
+    },
+
+    "ordering_food": {
+        "objective": "Learn how to order food in Spanish.",
+        "vocabulary": [
+            {
+                "english": "I want coffee",
+                "spanish": "Quiero café"
+            },
+            {
+                "english": "Water",
+                "spanish": "Agua"
+            },
+            {
+                "english": "The bill please",
+                "spanish": "La cuenta por favor"
+            }
+        ],
+        "examples": [
+            "Quiero café por favor",
+            "La cuenta por favor"
+        ],
+        "practice_questions": [
+            "How do you say water in Spanish?",
+            "How do you ask for the bill in Spanish?"
         ]
     }
 }

@@ -1,9 +1,3 @@
-#
-# Copyright (c) 2024–2025, Daily
-#
-# SPDX-License-Identifier: BSD 2-Clause License
-#
-
 """simple-chatbot - Pipecat Voice Agent
 
 This module implements a chatbot using Google's Gemini Live model for natural language
@@ -23,8 +17,15 @@ Run the bot using::
 """
 
 import os
+from memory import load_progress, save_progress
 from curriculum import LESSONS
 from lesson_state import LessonState
+from orchestration import (
+    detect_mode,
+    get_mode_instruction,
+    detect_lesson_switch,
+    track_mistake,
+)
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -110,6 +111,24 @@ class TalkingAnimation(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
+def detect_mode(user_text, lesson_state):
+    text = user_text.lower()
+
+    if "quiz" in text:
+        lesson_state.start_quiz(lesson_state.current_lesson)
+        return "quiz"
+
+    elif "teach" in text or "lesson" in text:
+        lesson_state.set_mode("teaching")
+        return "teaching"
+
+    elif "practice" in text or "conversation" in text:
+        lesson_state.set_mode("conversation")
+        return "conversation"
+
+    return lesson_state.current_mode
+
+
 async def run_bot(transport: BaseTransport):
     """Main bot execution function.
 
@@ -120,6 +139,10 @@ async def run_bot(transport: BaseTransport):
     - RTVI event handling
     """
     lesson_state = LessonState()
+    progress = load_progress()
+
+    lesson_state.mistakes = progress["mistakes"]
+    lesson_state.learned_vocab = progress["learned_vocab"]
     lesson_state.start_lesson("greetings")
     current_lesson = LESSONS[lesson_state.current_lesson]
     lesson_context = f"""
@@ -170,22 +193,91 @@ You support:
 - Quiz mode
 - Conversation practice
 - Doubt resolution
+- Progress review
+
+PROGRESS REVIEW:
+If the learner asks what they learned, summarize:
+- vocabulary practiced
+- conversation topics covered
+- recent Spanish phrases used
+
+Keep summaries short, encouraging, and conversational.
+
+Example:
+"Today you practiced Hola, Buenos días, and ordering coffee in Spanish."
 
 INTERRUPTIONS:
 If the learner interrupts with a doubt or question:
-- answer briefly in English
-- then smoothly resume the lesson
+- answer briefly in simple English
+- keep the explanation under 1 sentence
+- immediately resume the previous activity naturally
+- do NOT ask "shall we continue?"
+- do NOT restart the lesson
+- continue from exactly where the interaction stopped
+
+Examples:
+
+Learner: Why do we say quiero?
+Bot: Quiero means "I want." Ahora, que quieres beber?
+
+Learner: What does agua mean?
+Bot: Agua means water. Perfecto. Algo mas?
 
 QUIZ BEHAVIOR:
 - Ask one question at a time
 - Wait for learner response
-- Give encouraging but specific feedback
-- Accept semantically correct answers
+- If the answer is correct, praise briefly
+- If the answer is close, gently correct it
+- If the answer is incorrect, give the correct answer briefly
+- Accept pronunciation mistakes and STT errors when meaning is understandable
+- Avoid long explanations during quizzes
+
+Examples:
+
+Learner: "Cinco" for five
+Bot: Correct! Muy bien!
+
+Learner: "Stress" for tres
+Bot: Close! It's "tres."
+
+Learner: "Mango" for hola
+Bot: Not quite. "Hola" means hello.
+
+LESSON COMPLETION:
+When the learner successfully practices multiple words or phrases:
+- congratulate them briefly
+- summarize what they learned
+- suggest the next lesson naturally
+
+Examples:
+
+"Great job! You finished basic greetings. Want to try numbers or ordering food?"
+
+"Nice work with coffee ordering! Ready for numbers next?"
 
 CONVERSATION PRACTICE:
-- Roleplay realistic situations
-- Correct mistakes gently
-- Encourage the learner to speak more
+- Roleplay realistic situations naturally
+- Stay in character during roleplay
+- Use short conversational replies
+- Use more Spanish during conversations
+- Correct mistakes gently without breaking immersion
+- Encourage the learner to continue speaking
+- Avoid sounding like a lecturer during roleplay
+
+ROLEPLAY EXAMPLES:
+
+Coffee shop:
+Bot: Hola! Que quieres pedir?
+Learner: Quiero cafe
+Bot: Muy bien! Un cafe. Algo mas?
+
+Restaurant:
+Bot: Bienvenido! Mesa para uno?
+Learner: Si
+Bot: Perfecto. Aqui esta el menu.
+
+IMPORTANT:
+During roleplay, behave like the character first and tutor second.
 
 PRONUNCIATION FEEDBACK:
 When the learner makes pronunciation mistakes:
@@ -195,15 +287,18 @@ When the learner makes pronunciation mistakes:
 IMPORTANT:
 The learner should speak more than you.
 You are a tutor, not a lecturer.
+
+IMPORTANT:
+Never abandon an active roleplay scenario unless the learner explicitly asks to stop.
 """,
             voice="Charon",  # Aoede, Charon, Fenrir, Kore, Puck
         ),
     )
 
     messages = [
-    {
-        "role": "user",
-        "content": f"""
+        {
+            "role": "user",
+            "content": f"""
 The learner wants to learn beginner Spanish through voice interaction.
 
 {lesson_context}
@@ -212,22 +307,91 @@ Start teaching the lesson step-by-step.
 Keep responses short and interactive.
 Ask the learner questions frequently.
 """
-    }
+        }
     ]
 
     # Set up conversation context and management
     # The context_aggregator will automatically collect conversation context
     context = LLMContext(messages)
-    user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
+
+    aggregators = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(
             vad_analyzer=SileroVADAnalyzer(),
         ),
     )
 
+    user_aggregator = aggregators.user()
+    assistant_aggregator = aggregators.assistant()
+
+    @user_aggregator.event_handler("on_user_message")
+    async def on_user_message(aggregator, message):
+        user_text = message.get("content", "")
+
+        detected_mode = detect_mode(user_text, lesson_state)
+
+        logger.info("=" * 50)
+        logger.info(f"USER: {user_text}")
+        logger.info(f"MODE: {detected_mode}")
+        logger.info(
+            f"LESSON: {lesson_state.current_lesson}"
+        )
+        logger.info(
+            f"MISTAKES TRACKED: {len(lesson_state.mistakes)}"
+        )
+        logger.info("=" * 50)
+
+        if (
+            lesson_state.current_mode == "quiz"
+            and lesson_state.current_question
+        ):
+            expected_keywords = {
+                "How do you say three in Spanish?": "tres",
+                "What does cinco mean?": "five",
+                "How do you say two in Spanish?": "dos",
+                "How do you say water in Spanish?": "agua",
+                "How do you ask for the bill in Spanish?": "la cuenta",
+            }
+
+            expected_answer = expected_keywords.get(
+                lesson_state.current_question
+            )
+
+            if expected_answer:
+                track_mistake(
+                    user_text,
+                    expected_answer,
+                    lesson_state,
+                )
+
+        if detected_mode == "quiz":
+            current_lesson = LESSONS.get(
+                lesson_state.current_lesson
+            )
+            quiz_questions = current_lesson["practice_questions"]
+
+            question = quiz_questions[
+                lesson_state.quiz_index % len(quiz_questions)
+            ]
+            lesson_state.current_question = question
+
+            lesson_state.next_quiz_question()
+
+            context.add_message({
+                "role": "system",
+                "content": f"""
+The learner requested quiz mode.
+
+Ask this exact quiz question:
+{question}
+
+Ask only ONE question.
+Wait for learner response.
+"""
+            })
+
     ta = TalkingAnimation()
 
-    # Pipeline - assembled from reusable components
     pipeline = Pipeline(
         [
             transport.input(),
@@ -261,6 +425,7 @@ Ask the learner questions frequently.
 
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):
+        save_progress(lesson_state)
         logger.info("Client disconnected")
         await task.cancel()
 
@@ -310,5 +475,4 @@ async def bot(runner_args: RunnerArguments):
 
 if __name__ == "__main__":
     from pipecat.runner.run import main
-
     main()

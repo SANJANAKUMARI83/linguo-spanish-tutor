@@ -9,6 +9,8 @@ class LessonState:
         self.mistakes = []
         self.learned_vocab = []
 
+        self.quiz_index = 0
+
     def start_lesson(self, lesson_name):
         self.current_mode = "teaching"
         self.current_lesson = lesson_name
@@ -18,6 +20,7 @@ class LessonState:
         self.current_mode = "quiz"
         self.current_lesson = lesson_name
         self.lesson_step = 0
+        self.quiz_index = 0
 
     def enter_doubt_mode(self):
         self.previous_mode = self.current_mode
@@ -32,3 +35,6 @@ class LessonState:
 
     def set_mode(self, mode):
         self.current_mode = mode
+
+    def next_quiz_question(self):
+        self.quiz_index += 1
