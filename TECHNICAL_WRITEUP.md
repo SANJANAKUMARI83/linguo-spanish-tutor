@@ -276,14 +276,11 @@ A lightweight evaluation approach was used during development using scripted con
 
 ## AI Assistance Disclosure
 
-AI coding assistants were used during development for:
-- Debugging
-- Prompt iteration
-- Architectural brainstorming
-- Code cleanup
-- Documentation polishing
+## AI Assistance Disclosure
 
-All final implementation decisions, integration work, debugging, orchestration design, and system behavior validation were manually reviewed and tested.
+AI assistants such as ChatGPT and Claude were used selectively during development for debugging support, prompt iteration, documentation refinement, and architectural brainstorming.
+
+All core implementation decisions, orchestration design, integration, testing, behavioral tuning, and final system validation were manually reviewed, iterated upon, and validated during development.
 
 ---
 
