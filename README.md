@@ -6,12 +6,6 @@ Linguo is designed to simulate a natural conversational language-learning experi
 
 ---
 
-## Demo
-
-🎥 Demo Video: *Add your demo video link here*
-
----
-
 ## Features
 
 ### Real-Time Voice Tutoring
@@ -132,7 +126,7 @@ linguo-spanish-tutor/
 ### 1. Clone Repository
 
 ```bash
-git clone <your-repo-url>
+git clone <repo-url>
 cd linguo-spanish-tutor
 ```
 
@@ -224,5 +218,7 @@ All core implementation decisions, orchestration design, integration, testing, b
 ## Author
 
 Sanjana Kumari
+
 IIT Graduate
+
 AI Engineer Assignment Submission
