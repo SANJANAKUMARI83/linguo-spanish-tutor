@@ -1,99 +1,228 @@
-# Simple Chatbot
+# Linguo: Real-Time AI Spanish Tutor
 
-<img src="image.png" width="420px">
+A voice-first, real-time AI Spanish tutor built using Pipecat and the Gemini Live API.
 
-This repository demonstrates a simple AI chatbot with real-time audio/video interaction, implemented using different client and server options. The bot server supports multiple AI backends, and you can connect to it using five different client approaches.
+Linguo is designed to simulate a natural conversational language-learning experience through low-latency spoken interaction, interruption handling, roleplay conversations, and adaptive tutoring flows.
 
-## Two Bot Options
+---
 
-1. **OpenAI Bot**
+## Demo
 
-   - Uses gpt-4o for conversation
-   - Requires OpenAI API key
+🎥 Demo Video: *Add your demo video link here*
 
-2. **Gemini Bot**
-   - Uses Google's Gemini Live model
-   - Requires Gemini API key
+---
 
-## Six Client Options
+## Features
 
-1. **Daily Prebuilt** (Simplest)
+### Real-Time Voice Tutoring
 
-   - Direct connection through a Daily Prebuilt room
-   - For demo purposes only; handy for quick testing
+* Streaming conversational interaction using voice input and output
+* Low-latency spoken responses
+* Natural conversational pacing
 
-2. **JavaScript**
+### Teaching Mode
 
-   - Basic implementation using [Pipecat JavaScript SDK](https://docs.pipecat.ai/client/js/introduction)
-   - No framework dependencies
-   - Good for learning the fundamentals
+Structured Spanish lessons including:
 
-3. **React**
+* Greetings
+* Numbers
+* Ordering Food / Coffee
 
-   - Basic impelmentation using [Pipecat React SDK](https://docs.pipecat.ai/client/react/introduction)
-   - Demonstrates the basic client principles with Pipecat React
+### Quiz Mode
 
-4. **React Native**
+* Conversational verbal quizzes
+* Corrective feedback
+* Semantic answer tolerance
+* Pronunciation mistake tolerance
 
-   - Basic impelmentation using [Pipecat React Native SDK](https://docs.pipecat.ai/client/react-native/introduction)
-   - Demonstrates the basic client principles with Pipecat React Native
+### Roleplay Conversations
 
-5. **Android**
+Practice real-world scenarios such as:
 
-   - Basic implementation using [Pipecat Android SDK](https://docs.pipecat.ai/client/android/introduction)
-   - Demonstrates the basic client principles with Pipecat Android
+* Ordering coffee
+* Ordering food
+* Conversational interaction with contextual corrections
 
-6. **iOS**
-   - Basic implementation using [Pipecat iOS SDK](https://docs.pipecat.ai/client/ios/introduction)
-   - Demonstrates the basic client principles with Pipecat iOS
+### Interruption Handling
 
-## Quick Start
+Supports natural conversational interruptions:
 
-### First, start the bot server:
+* Ask doubts mid-lesson
+* Switch topics dynamically
+* Resume previous conversational context naturally
 
-Follow the instructions in the [server directory](server/).
+### Progress Review
 
-### Next, connect using your preferred client app:
+The tutor can summarize previously practiced topics and vocabulary during the session.
 
-- [Android Guide](client/android/README.md)
-- [iOS Guide](client/ios/README.md)
-- [Daily Prebuilt](client/prebuilt/README.md)
-- [JavaScript Guide](client/javascript/README.md)
-- [React Guide](client/react/README.md)
+### Persistent Memory
 
-## Important Note
+Lightweight persistence using JSON storage:
 
-The bot server must be running for any of the client implementations to work. Start the server first before trying any of the client apps.
+* Completed lessons
+* Vocabulary exposure
+* Session progress
 
-## Requirements
+---
 
-- Python 3.10+
-- Node.js 16+ (for JavaScript and React implementations)
-- Daily API key
-- OpenAI API key (for OpenAI bot)
-- Gemini API key (for Gemini bot)
-- ElevenLabs API key
-- Modern web browser with WebRTC support
+## System Architecture
 
-## Project Structure
+![Architecture Diagram](architecture.png)
 
+### High-Level Flow
+
+User Voice Input
+→ Browser UI (WebRTC)
+→ Pipecat Real-Time Pipeline
+→ Silero VAD
+→ Gemini Live API
+→ Tutor Orchestration Logic
+→ Lesson / Quiz Manager
+→ Memory Layer (`progress.json`)
+→ Streaming Voice Response Back to User
+
+---
+
+## Tech Stack
+
+### Orchestration
+
+* Pipecat
+
+### LLM
+
+* Gemini Live API
+
+### Voice Activity Detection
+
+* Silero VAD
+
+### Frontend
+
+* HTML / CSS / JavaScript
+* WebRTC
+
+### Backend
+
+* Python
+
+### Persistence
+
+* JSON (`progress.json`)
+
+---
+
+## Repository Structure
+
+```text
+linguo-spanish-tutor/
+│
+├── client/                  # Frontend UI
+├── server/                  # Pipecat backend pipeline
+├── TECHNICAL_WRITEUP.md     # Detailed technical documentation
+├── architecture.png         # Architecture diagram
+├── README.md
+└── .env.example
 ```
-simple-chatbot/
-├── server/              # Bot server implementation
-│   ├── assets           # Directory of sprite images
-│   ├── bot-openai.py    # OpenAI bot implementation
-│   ├── bot-gemini.py    # Gemini bot implementation
-│   ├── env.example      # Env variable example
-│   ├── Dockerfile       # Dockerfile for building your image
-│   ├── pcc-deploy.toml  # Pipecat Cloud: Deployment specification
-│   ├── pyproject.toml   # Project specification
-│   ├── README.md        # More specific server setup instructions
-│   └── requirements.txt
-└── client/              # Client implementations
-    ├── android/         # Daily Android connection
-    ├── ios/             # Daily iOS connection
-    ├── javascript/      # Daily JavaScript connection
-    ├── prebuilt/        # Pipecat Prebuilt client
-    ├── react/           # Pipecat React client
-    └── react-native/    # Pipecat React Native client
+
+---
+
+## Setup Instructions
+
+### 1. Clone Repository
+
+```bash
+git clone <your-repo-url>
+cd linguo-spanish-tutor
 ```
+
+### 2. Install Dependencies
+
+```bash
+uv sync
+```
+
+### 3. Configure Environment Variables
+
+Create a `.env` file:
+
+```env
+GEMINI_API_KEY=your_api_key_here
+```
+
+---
+
+## Running the Application
+
+### Start Backend
+
+```bash
+uv run bot-gemini.py
+```
+
+### Start Frontend
+
+Open the browser client locally and connect to the Pipecat pipeline.
+
+---
+
+## Assignment Requirements Covered
+
+* Real-time voice tutoring
+* Quiz mode
+* Roleplay conversations
+* Interruption handling
+* Code-switching tolerance
+* Persistent memory
+* Voice-first conversational UX
+* Pipecat-based orchestration
+* Gemini Live integration
+
+---
+
+## Technical Writeup
+
+Detailed implementation notes, tradeoffs, architecture decisions, latency observations, and challenges are available in:
+
+📄 `TECHNICAL_WRITEUP.md`
+
+---
+
+## Challenges Faced
+
+Some of the major engineering challenges during development included:
+
+* Real-time interruption handling
+* Conversational continuity
+* Speech recognition noise tolerance
+* Balancing flexibility vs deterministic orchestration
+* Low-latency conversational UX
+
+---
+
+## Future Improvements
+
+Potential future enhancements include:
+
+* Pronunciation scoring
+* Adaptive curriculum difficulty
+* Better semantic quiz grading
+* Spaced repetition systems
+* Multi-language support
+* Enhanced analytics and observability
+
+---
+
+## AI Assistance Disclosure
+
+AI assistants such as ChatGPT and Claude were used selectively during development for debugging support, prompt iteration, documentation refinement, and architectural brainstorming.
+
+All core implementation decisions, orchestration design, integration, testing, behavioral tuning, and final system validation were manually reviewed, iterated upon, and validated during development.
+
+---
+
+## Author
+
+Sanjana Kumari
+IIT Graduate
+AI Engineer Assignment Submission
